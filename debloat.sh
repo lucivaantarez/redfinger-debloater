@@ -1,11 +1,11 @@
 #!/bin/bash
 # ============================================
-#   Redfinger Debloater v1.0
+#   Redfinger Debloater v1.1
 #   by lucivaantarez
 #   github.com/lucivaantarez/redfinger-debloater
 #
 #   Run with:
-#   curl -sL https://raw.githubusercontent.com/lucivaantarez/redfinger-debloater/main/debloat.sh | bash
+#   bash <(curl -sL https://raw.githubusercontent.com/lucivaantarez/redfinger-debloater/main/debloat.sh)
 # ============================================
 
 PACKAGES=(
@@ -62,10 +62,21 @@ PACKAGES=(
 
 clear
 echo "========================================"
-echo "      Redfinger Debloater v1.0          "
+echo "      Redfinger Debloater v1.1          "
 echo "   github.com/lucivaantarez             "
 echo "========================================"
 echo ""
+
+# Check root access
+echo "[~] Checking root access..."
+if ! su -c "echo ok" > /dev/null 2>&1; then
+    echo "[X] Root not available! This script requires root (su)."
+    echo "    Make sure your Redfinger has root enabled."
+    exit 1
+fi
+echo "[OK] Root access confirmed!"
+echo ""
+
 echo "[!] The following packages will be removed:"
 for pkg in "${PACKAGES[@]}"; do
     echo "    - $pkg"
@@ -90,13 +101,13 @@ SKIPPED=0
 FAILED=0
 
 for pkg in "${PACKAGES[@]}"; do
-    printf "  Removing %-50s" "$pkg ..."
-    result=$(pm uninstall --user 0 "$pkg" 2>&1)
+    printf "  Removing %-45s" "$pkg ..."
+    result=$(su -c "pm uninstall --user 0 $pkg" 2>&1)
 
     if echo "$result" | grep -q "Success"; then
         echo "✅ Removed"
         ((SUCCESS++))
-    elif echo "$result" | grep -q "not installed"; then
+    elif echo "$result" | grep -q "not installed\|Unknown package"; then
         echo "⚠️  Skipped"
         ((SKIPPED++))
     else
@@ -107,9 +118,9 @@ done
 
 echo ""
 echo "========================================"
-echo "  ✅ Removed : $SUCCESS"
-echo "  ⚠️  Skipped : $SKIPPED"
-echo "  ❌ Failed  : $FAILED"
+echo "  Removed : $SUCCESS"
+echo "  Skipped : $SKIPPED"
+echo "  Failed  : $FAILED"
 echo "========================================"
 echo "[DONE] Debloat complete!"
 echo "========================================"
